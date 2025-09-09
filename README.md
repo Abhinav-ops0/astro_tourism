@@ -73,6 +73,45 @@ The solar system explorer works as a standalone frontend application!
 
 🎉 **That's it!** Start exploring the solar system by clicking on any planet or the Sun!
 
+### 🌐 Production Deployment on AWS EC2
+
+For production deployment with Docker and Nginx on Amazon EC2:
+
+1. **Set up EC2 instance:**
+   ```bash
+   # Run on your EC2 instance
+   sudo ./scripts/setup-ec2.sh
+   ```
+
+2. **Deploy the application:**
+   ```bash
+   # Clone repository and deploy
+   git clone <your-repo-url>
+   cd astro_tourism
+   make deploy
+   ```
+
+3. **Access your application:**
+   ```
+   http://your-ec2-public-ip
+   ```
+
+📖 **Detailed deployment guide:** See [DEPLOYMENT.md](DEPLOYMENT.md) for comprehensive AWS EC2 deployment instructions.
+
+### 🛠️ Development Commands
+
+Use the included Makefile for easy development:
+
+```bash
+make help          # Show all available commands
+make dev-frontend  # Start frontend development
+make dev-backend   # Start backend development
+make build         # Build Docker images
+make deploy        # Deploy to production
+make logs          # View application logs
+make health        # Check application health
+```
+
 ### 🔍 How to Use
 
 1. **Explore**: Click on any celestial body (Sun, planets) to learn about it
@@ -96,10 +135,18 @@ The solar system explorer works as a standalone frontend application!
 - **CSS3** - Advanced styling with animations, gradients, and transforms
 - **JavaScript ES6+** - Modern JavaScript features and syntax
 
-### Optional Backend
-- **Python 3.x** - Programming language
+### Backend
+- **Python 3.11** - Programming language
 - **Flask 3.0.0** - Lightweight web framework
 - **Flask-CORS 4.0.0** - Cross-Origin Resource Sharing support
+- **Gunicorn** - Python WSGI HTTP Server for production
+
+### DevOps & Deployment
+- **Docker** - Containerization platform
+- **Docker Compose** - Multi-container orchestration
+- **Nginx** - High-performance web server and reverse proxy
+- **Amazon EC2** - Cloud hosting platform
+- **Ubuntu 22.04 LTS** - Operating system
 
 ## 🎨 Key Features Implemented
 
