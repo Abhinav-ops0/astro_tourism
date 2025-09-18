@@ -1,41 +1,42 @@
-# Configure AWS Provider (no region needed for S3 as it's a global service)
+# Configure AWS Provider
 provider "aws" {}
 
 # Create S3 Bucket
-resource "aws_s3_bucket" "astro_tourism_bucket" {
-  bucket = "astro-tourism"
+resource "aws_s3_bucket" "astro_tour_bucket" {
+  bucket = "astro-tour-mod-123"
 
   tags = {
-    Name        = "astro-tourism"
+    Name        = "astro-tour-mod-123"
     Environment = "production"
-    Purpose     = "Tourism Content"
     Managed_by  = "Terraform"
     Created_at  = timestamp()
+    Project     = "Astro Tour"
   }
 }
 
 # Enable versioning
-resource "aws_s3_bucket_versioning" "astro_tourism_versioning" {
-  bucket = aws_s3_bucket.astro_tourism_bucket.id
+resource "aws_s3_bucket_versioning" "astro_tour_bucket_versioning" {
+  bucket = aws_s3_bucket.astro_tour_bucket.id
   versioning_configuration {
     status = "Enabled"
   }
 }
 
 # Enable server-side encryption
-resource "aws_s3_bucket_server_side_encryption_configuration" "astro_tourism_encryption" {
-  bucket = aws_s3_bucket.astro_tourism_bucket.id
+resource "aws_s3_bucket_server_side_encryption_configuration" "astro_tour_bucket_encryption" {
+  bucket = aws_s3_bucket.astro_tour_bucket.id
 
   rule {
     apply_server_side_encryption_by_default {
       sse_algorithm = "AES256"
     }
+    bucket_key_enabled = true
   }
 }
 
 # Block public access
-resource "aws_s3_bucket_public_access_block" "astro_tourism_public_access_block" {
-  bucket = aws_s3_bucket.astro_tourism_bucket.id
+resource "aws_s3_bucket_public_access_block" "astro_tour_bucket_public_access_block" {
+  bucket = aws_s3_bucket.astro_tour_bucket.id
 
   block_public_acls       = true
   block_public_policy     = true
@@ -44,34 +45,31 @@ resource "aws_s3_bucket_public_access_block" "astro_tourism_public_access_block"
 }
 
 # Enable access logging
-resource "aws_s3_bucket_logging" "astro_tourism_logging" {
-  bucket = aws_s3_bucket.astro_tourism_bucket.id
+resource "aws_s3_bucket_logging" "astro_tour_bucket_logging" {
+  bucket = aws_s3_bucket.astro_tour_bucket.id
 
-  target_bucket = aws_s3_bucket.astro_tourism_bucket.id
+  target_bucket = aws_s3_bucket.astro_tour_bucket.id
   target_prefix = "access-logs/"
 }
 
-# Add lifecycle rules for content management
-resource "aws_s3_bucket_lifecycle_configuration" "astro_tourism_lifecycle" {
-  bucket = aws_s3_bucket.astro_tourism_bucket.id
+# Add lifecycle rules
+resource "aws_s3_bucket_lifecycle_configuration" "astro_tour_bucket_lifecycle" {
+  bucket = aws_s3_bucket.astro_tour_bucket.id
 
   rule {
-    id     = "content_lifecycle"
+    id     = "cost_optimization"
     status = "Enabled"
 
-    # Move infrequently accessed content to cheaper storage
     transition {
       days          = 90
       storage_class = "STANDARD_IA"
     }
 
-    # Archive older content
     transition {
       days          = 180
       storage_class = "GLACIER"
     }
 
-    # Clean up old versions
     noncurrent_version_transition {
       noncurrent_days = 30
       storage_class   = "STANDARD_IA"
@@ -83,36 +81,30 @@ resource "aws_s3_bucket_lifecycle_configuration" "astro_tourism_lifecycle" {
   }
 }
 
-# Add CORS configuration for web access
-resource "aws_s3_bucket_cors_configuration" "astro_tourism_cors" {
-  bucket = aws_s3_bucket.astro_tourism_bucket.id
+# Add bucket policy to enforce SSL
+resource "aws_s3_bucket_policy" "astro_tour_bucket_policy" {
+  bucket = aws_s3_bucket.astro_tour_bucket.id
 
-  cors_rule {
-    allowed_headers = ["*"]
-    allowed_methods = ["GET", "HEAD"]
-    allowed_origins = ["*"] # Consider restricting this to specific domains in production
-    expose_headers  = ["ETag"]
-    max_age_seconds = 3000
-  }
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "EnforceSSLOnly"
+        Effect    = "Deny"
+        Principal = "*"
+        Action    = "s3:*"
+        Resource = [
+          aws_s3_bucket.astro_tour_bucket.arn,
+          "${aws_s3_bucket.astro_tour_bucket.arn}/*"
+        ]
+        Condition = {
+          Bool = {
+            "aws:SecureTransport" = "false"
+          }
+        }
+      }
+    ]
+  })
 }
 
 # Output the bucket details
-output "bucket_name" {
-  value       = aws_s3_bucket.astro_tourism_bucket.id
-  description = "The name of the bucket"
-}
-
-output "bucket_arn" {
-  value       = aws_s3_bucket.astro_tourism_bucket.arn
-  description = "The ARN of the bucket"
-}
-
-output "bucket_domain_name" {
-  value       = aws_s3_bucket.astro_tourism_bucket.bucket_domain_name
-  description = "The bucket domain name"
-}
-
-output "bucket_regional_domain_name" {
-  value       = aws_s3_bucket.astro_tourism_bucket.bucket_regional_domain_name
-  description = "The bucket region-specific domain name"
-}
