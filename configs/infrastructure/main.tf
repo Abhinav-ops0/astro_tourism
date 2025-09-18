@@ -1,41 +1,36 @@
-# Configure AWS Provider (no region needed for S3 as it's a global service)
+# Configure AWS Provider
 provider "aws" {}
 
 # Create S3 Bucket
-resource "aws_s3_bucket" "astro_tourism_bucket" {
-  bucket = "astro-tourism"
+resource "aws_s3_bucket" "astro_tour_bucket" {
+  bucket = var.bucket_name
 
-  tags = {
-    Name        = "astro-tourism"
-    Environment = "production"
-    Purpose     = "Tourism Content"
-    Managed_by  = "Terraform"
-    Created_at  = timestamp()
-  }
+  tags = var.tags
 }
 
 # Enable versioning
-resource "aws_s3_bucket_versioning" "astro_tourism_versioning" {
-  bucket = aws_s3_bucket.astro_tourism_bucket.id
+resource "aws_s3_bucket_versioning" "astro_tour_bucket_versioning" {
+  bucket = aws_s3_bucket.astro_tour_bucket.id
   versioning_configuration {
     status = "Enabled"
   }
 }
 
 # Enable server-side encryption
-resource "aws_s3_bucket_server_side_encryption_configuration" "astro_tourism_encryption" {
-  bucket = aws_s3_bucket.astro_tourism_bucket.id
+resource "aws_s3_bucket_server_side_encryption_configuration" "astro_tour_bucket_encryption" {
+  bucket = aws_s3_bucket.astro_tour_bucket.id
 
   rule {
     apply_server_side_encryption_by_default {
       sse_algorithm = "AES256"
     }
+    bucket_key_enabled = true
   }
 }
 
 # Block public access
-resource "aws_s3_bucket_public_access_block" "astro_tourism_public_access_block" {
-  bucket = aws_s3_bucket.astro_tourism_bucket.id
+resource "aws_s3_bucket_public_access_block" "astro_tour_bucket_public_access_block" {
+  bucket = aws_s3_bucket.astro_tour_bucket.id
 
   block_public_acls       = true
   block_public_policy     = true
@@ -44,75 +39,53 @@ resource "aws_s3_bucket_public_access_block" "astro_tourism_public_access_block"
 }
 
 # Enable access logging
-resource "aws_s3_bucket_logging" "astro_tourism_logging" {
-  bucket = aws_s3_bucket.astro_tourism_bucket.id
+resource "aws_s3_bucket_logging" "astro_tour_bucket_logging" {
+  bucket = aws_s3_bucket.astro_tour_bucket.id
 
-  target_bucket = aws_s3_bucket.astro_tourism_bucket.id
+  target_bucket = aws_s3_bucket.astro_tour_bucket.id
   target_prefix = "access-logs/"
 }
 
-# Add lifecycle rules for content management
-resource "aws_s3_bucket_lifecycle_configuration" "astro_tourism_lifecycle" {
-  bucket = aws_s3_bucket.astro_tourism_bucket.id
+# Add intelligent tiering for cost optimization
+resource "aws_s3_bucket_intelligent_tiering_configuration" "astro_tour_bucket_tiering" {
+  bucket = aws_s3_bucket.astro_tour_bucket.id
+  name   = "EntireBucket"
 
-  rule {
-    id     = "content_lifecycle"
-    status = "Enabled"
+  tiering {
+    access_tier = "DEEP_ARCHIVE_ACCESS"
+    days        = 180
+  }
 
-    # Move infrequently accessed content to cheaper storage
-    transition {
-      days          = 90
-      storage_class = "STANDARD_IA"
-    }
-
-    # Archive older content
-    transition {
-      days          = 180
-      storage_class = "GLACIER"
-    }
-
-    # Clean up old versions
-    noncurrent_version_transition {
-      noncurrent_days = 30
-      storage_class   = "STANDARD_IA"
-    }
-
-    noncurrent_version_expiration {
-      noncurrent_days = 90
-    }
+  tiering {
+    access_tier = "ARCHIVE_ACCESS"
+    days        = 90
   }
 }
 
-# Add CORS configuration for web access
-resource "aws_s3_bucket_cors_configuration" "astro_tourism_cors" {
-  bucket = aws_s3_bucket.astro_tourism_bucket.id
+# Add lifecycle rules
+resource "aws_s3_bucket_lifecycle_configuration" "astro_tour_bucket_lifecycle" {
+  bucket = aws_s3_bucket.astro_tour_bucket.id
 
-  cors_rule {
-    allowed_headers = ["*"]
-    allowed_methods = ["GET", "HEAD"]
-    allowed_origins = ["*"] # Consider restricting this to specific domains in production
-    expose_headers  = ["ETag"]
-    max_age_seconds = 3000
+  rule {
+    id     = "cleanup_and_archive"
+    status = "Enabled"
+
+    # Move non-current versions to glacier after 90 days
+    noncurrent_version_transition {
+      noncurrent_days = 90
+      storage_class   = "GLACIER"
+    }
+
+    # Delete non-current versions after 365 days
+    noncurrent_version_expiration {
+      noncurrent_days = 365
+    }
+
+    # Clean up incomplete multipart uploads
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
   }
 }
 
 # Output the bucket details
-output "bucket_name" {
-  value       = aws_s3_bucket.astro_tourism_bucket.id
-  description = "The name of the bucket"
-}
-
-output "bucket_arn" {
-  value       = aws_s3_bucket.astro_tourism_bucket.arn
-  description = "The ARN of the bucket"
-}
-
-output "bucket_domain_name" {
-  value       = aws_s3_bucket.astro_tourism_bucket.bucket_domain_name
-  description = "The bucket domain name"
-}
-
-output "bucket_regional_domain_name" {
-  value       = aws_s3_bucket.astro_tourism_bucket.bucket_regional_domain_name
-  description = "The bucket region-specific domain name"
-}
