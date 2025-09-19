@@ -1,0 +1,33 @@
+services:
+  nginx:
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./ssl:/etc/nginx/ssl
+    environment:
+      - NGINX_HOST=your-domain.com
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  backend:
+    environment:
+      - FLASK_ENV=production
+      - PORT=5000
+      - WORKERS=4
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
