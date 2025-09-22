@@ -1,24 +1,28 @@
-# Configure AWS Provider
-provider "aws" {}
+# Add to configs/infrastructure/main.tf
 
-# Create S3 Bucket
-resource "aws_s3_bucket" "astro_tour_bucket" {
+# Create new S3 bucket for editor layout testing
+resource "aws_s3_bucket" "editor_layout_bucket" {
   bucket = var.bucket_name
 
-  tags = var.tags
+  tags = merge(var.tags, {
+    Name = "test-new-editor-layout"
+    Purpose = "Editor layout testing"
+    Environment = var.environment
+    Component = "Editor"
+  })
 }
 
 # Enable versioning
-resource "aws_s3_bucket_versioning" "astro_tour_bucket_versioning" {
-  bucket = aws_s3_bucket.astro_tour_bucket.id
+resource "aws_s3_bucket_versioning" "editor_layout_bucket_versioning" {
+  bucket = aws_s3_bucket.editor_layout_bucket.id
   versioning_configuration {
     status = "Enabled"
   }
 }
 
 # Enable server-side encryption
-resource "aws_s3_bucket_server_side_encryption_configuration" "astro_tour_bucket_encryption" {
-  bucket = aws_s3_bucket.astro_tour_bucket.id
+resource "aws_s3_bucket_server_side_encryption_configuration" "editor_layout_bucket_encryption" {
+  bucket = aws_s3_bucket.editor_layout_bucket.id
 
   rule {
     apply_server_side_encryption_by_default {
@@ -29,8 +33,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "astro_tour_bucket
 }
 
 # Block public access
-resource "aws_s3_bucket_public_access_block" "astro_tour_bucket_public_access_block" {
-  bucket = aws_s3_bucket.astro_tour_bucket.id
+resource "aws_s3_bucket_public_access_block" "editor_layout_bucket_public_access_block" {
+  bucket = aws_s3_bucket.editor_layout_bucket.id
 
   block_public_acls       = true
   block_public_policy     = true
@@ -39,53 +43,80 @@ resource "aws_s3_bucket_public_access_block" "astro_tour_bucket_public_access_bl
 }
 
 # Enable access logging
-resource "aws_s3_bucket_logging" "astro_tour_bucket_logging" {
-  bucket = aws_s3_bucket.astro_tour_bucket.id
+resource "aws_s3_bucket_logging" "editor_layout_bucket_logging" {
+  bucket = aws_s3_bucket.editor_layout_bucket.id
 
-  target_bucket = aws_s3_bucket.astro_tour_bucket.id
+  target_bucket = aws_s3_bucket.editor_layout_bucket.id
   target_prefix = "access-logs/"
 }
 
-# Add intelligent tiering for cost optimization
-resource "aws_s3_bucket_intelligent_tiering_configuration" "astro_tour_bucket_tiering" {
-  bucket = aws_s3_bucket.astro_tour_bucket.id
-  name   = "EntireBucket"
-
-  tiering {
-    access_tier = "DEEP_ARCHIVE_ACCESS"
-    days        = 180
-  }
-
-  tiering {
-    access_tier = "ARCHIVE_ACCESS"
-    days        = 90
-  }
-}
-
 # Add lifecycle rules
-resource "aws_s3_bucket_lifecycle_configuration" "astro_tour_bucket_lifecycle" {
-  bucket = aws_s3_bucket.astro_tour_bucket.id
+resource "aws_s3_bucket_lifecycle_configuration" "editor_layout_bucket_lifecycle" {
+  bucket = aws_s3_bucket.editor_layout_bucket.id
 
   rule {
-    id     = "cleanup_and_archive"
+    id     = "editor_layout_test_lifecycle"
     status = "Enabled"
 
-    # Move non-current versions to glacier after 90 days
+    # Move files to STANDARD_IA after 30 days
+    transition {
+      days          = 30
+      storage_class = "STANDARD_IA"
+    }
+
+    # Move old versions to Glacier after 60 days
     noncurrent_version_transition {
-      noncurrent_days = 90
+      noncurrent_days = 60
       storage_class   = "GLACIER"
     }
 
-    # Delete non-current versions after 365 days
+    # Delete old versions after 90 days
     noncurrent_version_expiration {
-      noncurrent_days = 365
+      noncurrent_days = 90
     }
 
     # Clean up incomplete multipart uploads
     abort_incomplete_multipart_upload {
       days_after_initiation = 7
     }
+
+    # Delete files after 180 days
+    expiration {
+      days = 180
+    }
   }
 }
 
-# Output the bucket details
+# Add intelligent tiering for cost optimization
+resource "aws_s3_bucket_intelligent_tiering_configuration" "editor_layout_bucket_tiering" {
+  bucket = aws_s3_bucket.editor_layout_bucket.id
+  name   = "EditorLayoutTiering"
+
+  tiering {
+    access_tier = "ARCHIVE_ACCESS"
+    days        = 90
+  }
+
+  tiering {
+    access_tier = "DEEP_ARCHIVE_ACCESS"
+    days        = 180
+  }
+
+  # Filter to exclude small objects where tiering wouldn't be cost-effective
+  filter {
+    min_object_size = 128000  # 128KB
+  }
+}
+
+# Add CORS configuration for editor functionality
+resource "aws_s3_bucket_cors_configuration" "editor_layout_bucket_cors" {
+  bucket = aws_s3_bucket.editor_layout_bucket.id
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["GET", "PUT", "POST", "DELETE", "HEAD"]
+    allowed_origins = ["*"]  # Restrict this to specific domains in production
+    expose_headers  = ["ETag"]
+    max_age_seconds = 3000
+  }
+}
