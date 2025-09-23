@@ -4,13 +4,7 @@
 variable "bucket_name" {
   description = "Name of the S3 bucket"
   type        = string
-  default     = "new-terraform-test-pr"
-}
-
-variable "environment" {
-  description = "Environment name (e.g., dev, staging, prod)"
-  type        = string
-  default     = "Test"
+  default     = "terraform-pr-1"
 }
 
 variable "tags" {
