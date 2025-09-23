@@ -4,7 +4,7 @@
 variable "bucket_name" {
   description = "Name of the S3 bucket"
   type        = string
-  default     = "vinegar-test-1"
+  default     = "${var.phoenix_bucket_name}-${random_id.phoenix_bucket_suffix.hex}"
 }
 
 variable "tags" {
