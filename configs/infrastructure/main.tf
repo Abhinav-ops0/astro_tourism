@@ -1,11 +1,14 @@
-# Add to configs/infrastructure/main.tf
+# Generate random suffix for bucket name uniqueness
+resource "random_id" "phoenix_bucket_suffix" {
+  byte_length = 4
+}
 
-# Create new S3 bucket for vinegar testing
-resource "aws_s3_bucket" "vinegar_test_bucket" {
+# Create S3 bucket for phoenix testing
+resource "aws_s3_bucket" "phoenix_test_bucket" {
   bucket = var.bucket_name
 
-  tags = merge(var.tags, {
-    Name        = "vinegar-test-1"
+  tags = merge(var.common_tags, {
+    Name        = "${var.phoenix_bucket_name}-${random_id.phoenix_bucket_suffix.hex}"
     Purpose     = "Testing"
     Environment = var.environment
     Component   = "Storage"
@@ -13,16 +16,16 @@ resource "aws_s3_bucket" "vinegar_test_bucket" {
 }
 
 # Enable versioning for data protection
-resource "aws_s3_bucket_versioning" "vinegar_test_bucket_versioning" {
-  bucket = aws_s3_bucket.vinegar_test_bucket.id
+resource "aws_s3_bucket_versioning" "phoenix_test_bucket_versioning" {
+  bucket = aws_s3_bucket.phoenix_test_bucket.id
   versioning_configuration {
     status = "Enabled"
   }
 }
 
 # Enable server-side encryption by default
-resource "aws_s3_bucket_server_side_encryption_configuration" "vinegar_test_bucket_encryption" {
-  bucket = aws_s3_bucket.vinegar_test_bucket.id
+resource "aws_s3_bucket_server_side_encryption_configuration" "phoenix_test_bucket_encryption" {
+  bucket = aws_s3_bucket.phoenix_test_bucket.id
 
   rule {
     apply_server_side_encryption_by_default {
@@ -33,8 +36,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "vinegar_test_buck
 }
 
 # Block all public access for security
-resource "aws_s3_bucket_public_access_block" "vinegar_test_bucket_public_access_block" {
-  bucket = aws_s3_bucket.vinegar_test_bucket.id
+resource "aws_s3_bucket_public_access_block" "phoenix_test_bucket_public_access_block" {
+  bucket = aws_s3_bucket.phoenix_test_bucket.id
 
   block_public_acls       = true
   block_public_policy     = true
@@ -42,25 +45,22 @@ resource "aws_s3_bucket_public_access_block" "vinegar_test_bucket_public_access_
   restrict_public_buckets = true
 }
 
-# Enable access logging
-resource "aws_s3_bucket_logging" "vinegar_test_bucket_logging" {
-  bucket = aws_s3_bucket.vinegar_test_bucket.id
-
-  target_bucket = aws_s3_bucket.vinegar_test_bucket.id
-  target_prefix = "access-logs/"
-}
-
 # Add lifecycle rules for cost optimization
-resource "aws_s3_bucket_lifecycle_configuration" "vinegar_test_bucket_lifecycle" {
-  bucket = aws_s3_bucket.vinegar_test_bucket.id
+resource "aws_s3_bucket_lifecycle_configuration" "phoenix_test_bucket_lifecycle" {
+  bucket = aws_s3_bucket.phoenix_test_bucket.id
 
   rule {
-    id     = "vinegar_test_lifecycle"
+    id     = "phoenix-test-lifecycle"
     status = "Enabled"
 
     transition {
       days          = 30
       storage_class = "STANDARD_IA"
+    }
+
+    transition {
+      days          = 60
+      storage_class = "GLACIER"
     }
 
     noncurrent_version_transition {
@@ -77,29 +77,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "vinegar_test_bucket_lifecycle"
     }
 
     expiration {
-      days = 180
+      days = 365
     }
   }
 }
-
-# Add intelligent tiering configuration
-resource "aws_s3_bucket_intelligent_tiering_configuration" "vinegar_test_bucket_tiering" {
-  bucket = aws_s3_bucket.vinegar_test_bucket.id
-  name   = "VinegarTestingTiering"
-
-  tiering {
-    access_tier = "ARCHIVE_ACCESS"
-    days        = 90
-  }
-
-  tiering {
-    access_tier = "DEEP_ARCHIVE_ACCESS"
-    days        = 180
-  }
-
-  filter {
-    prefix = "data/"
-  }
-}
-
-# Add outputs for the bucket
