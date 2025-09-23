@@ -1,28 +1,28 @@
 # Add to configs/infrastructure/main.tf
 
-# Create new S3 bucket for PR format testing
-resource "aws_s3_bucket" "pr_format_bucket" {
+# Create new S3 bucket for Terraform PR testing
+resource "aws_s3_bucket" "terraform_pr_test_bucket" {
   bucket = var.bucket_name
 
   tags = merge(var.tags, {
-    Name = "test-new-pr-format"
-    Purpose = "PR format testing"
+    Name = "new-terraform-test-pr"
+    Purpose = "Terraform PR Testing"
     Environment = var.environment
     Component = "PR"
   })
 }
 
 # Enable versioning
-resource "aws_s3_bucket_versioning" "pr_format_bucket_versioning" {
-  bucket = aws_s3_bucket.pr_format_bucket.id
+resource "aws_s3_bucket_versioning" "terraform_pr_test_bucket_versioning" {
+  bucket = aws_s3_bucket.terraform_pr_test_bucket.id
   versioning_configuration {
     status = "Enabled"
   }
 }
 
 # Enable server-side encryption
-resource "aws_s3_bucket_server_side_encryption_configuration" "pr_format_bucket_encryption" {
-  bucket = aws_s3_bucket.pr_format_bucket.id
+resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_pr_test_bucket_encryption" {
+  bucket = aws_s3_bucket.terraform_pr_test_bucket.id
 
   rule {
     apply_server_side_encryption_by_default {
@@ -33,8 +33,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "pr_format_bucket_
 }
 
 # Block public access
-resource "aws_s3_bucket_public_access_block" "pr_format_bucket_public_access_block" {
-  bucket = aws_s3_bucket.pr_format_bucket.id
+resource "aws_s3_bucket_public_access_block" "terraform_pr_test_bucket_public_access_block" {
+  bucket = aws_s3_bucket.terraform_pr_test_bucket.id
 
   block_public_acls       = true
   block_public_policy     = true
@@ -43,19 +43,19 @@ resource "aws_s3_bucket_public_access_block" "pr_format_bucket_public_access_blo
 }
 
 # Enable access logging
-resource "aws_s3_bucket_logging" "pr_format_bucket_logging" {
-  bucket = aws_s3_bucket.pr_format_bucket.id
+resource "aws_s3_bucket_logging" "terraform_pr_test_bucket_logging" {
+  bucket = aws_s3_bucket.terraform_pr_test_bucket.id
 
-  target_bucket = aws_s3_bucket.pr_format_bucket.id
+  target_bucket = aws_s3_bucket.terraform_pr_test_bucket.id
   target_prefix = "access-logs/"
 }
 
 # Add lifecycle rules
-resource "aws_s3_bucket_lifecycle_configuration" "pr_format_bucket_lifecycle" {
-  bucket = aws_s3_bucket.pr_format_bucket.id
+resource "aws_s3_bucket_lifecycle_configuration" "terraform_pr_test_bucket_lifecycle" {
+  bucket = aws_s3_bucket.terraform_pr_test_bucket.id
 
   rule {
-    id     = "pr_format_test_lifecycle"
+    id     = "terraform_pr_test_lifecycle"
     status = "Enabled"
 
     # Move files to STANDARD_IA after 30 days
@@ -88,9 +88,9 @@ resource "aws_s3_bucket_lifecycle_configuration" "pr_format_bucket_lifecycle" {
 }
 
 # Add intelligent tiering for cost optimization
-resource "aws_s3_bucket_intelligent_tiering_configuration" "pr_format_bucket_tiering" {
-  bucket = aws_s3_bucket.pr_format_bucket.id
-  name   = "PRFormatTiering"
+resource "aws_s3_bucket_intelligent_tiering_configuration" "terraform_pr_test_bucket_tiering" {
+  bucket = aws_s3_bucket.terraform_pr_test_bucket.id
+  name   = "TerraformPRTiering"
 
   tiering {
     access_tier = "ARCHIVE_ACCESS"
@@ -109,8 +109,8 @@ resource "aws_s3_bucket_intelligent_tiering_configuration" "pr_format_bucket_tie
 }
 
 # Add CORS configuration for PR testing functionality
-resource "aws_s3_bucket_cors_configuration" "pr_format_bucket_cors" {
-  bucket = aws_s3_bucket.pr_format_bucket.id
+resource "aws_s3_bucket_cors_configuration" "terraform_pr_test_bucket_cors" {
+  bucket = aws_s3_bucket.terraform_pr_test_bucket.id
 
   cors_rule {
     allowed_headers = ["*"]
