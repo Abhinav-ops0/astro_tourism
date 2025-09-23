@@ -5,7 +5,7 @@ resource "aws_s3_bucket" "pr_test_bucket" {
   bucket = var.bucket_name
 
   tags = merge(var.tags, {
-    Name = "terraform-pr-1"
+    Name = "test-pr-terraform-1"
     Purpose = "PR Testing"
     Environment = var.environment
     Component = "PR"
