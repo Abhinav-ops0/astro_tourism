@@ -4,7 +4,7 @@
 variable "bucket_name" {
   description = "Name of the S3 bucket"
   type        = string
-  default     = "${var.new_prompt_bucket_name}-${random_id.new_prompt_bucket_suffix.hex}"
+  default     = "${var.tf_new_bucket_name}-${random_id.tf_new_bucket_suffix.hex}"
 }
 
 variable "tags" {
