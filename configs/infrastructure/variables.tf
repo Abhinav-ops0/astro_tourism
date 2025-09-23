@@ -4,7 +4,13 @@
 variable "bucket_name" {
   description = "Name of the S3 bucket"
   type        = string
-  default     = "${var.tf_new_bucket_name}-${random_id.tf_new_bucket_suffix.hex}"
+  default     = "tf-new-bucket-1"
+}
+
+variable "environment" {
+  description = "Environment name (e.g., dev, staging, prod)"
+  type        = string
+  default     = "test"
 }
 
 variable "tags" {
