@@ -4,13 +4,13 @@
 variable "bucket_name" {
   description = "Name of the S3 bucket"
   type        = string
-  default     = "tf-new-bucket-1"
+  default     = "help-test-me"
 }
 
 variable "environment" {
   description = "Environment name (e.g., dev, staging, prod)"
   type        = string
-  default     = "test"
+  default     = "testing"
 }
 
 variable "tags" {
